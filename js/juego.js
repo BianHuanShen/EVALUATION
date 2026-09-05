@@ -2,22 +2,23 @@
 
 /*
 =========================================================
-AVENTURAS DE LAS TABLAS
-JAVASCRIPT PRINCIPAL
+    AVENTURAS DE LAS TABLAS
+    JAVASCRIPT PRINCIPAL
 
-Este archivo controla TODO el juego.
+    SISTEMA DE DESBLOQUEO PROGRESIVO
 
-Puedes modificar fácilmente:
+    Tabla 1 → desbloqueada inicialmente
+    Tabla 2 → requiere 10/10 en tabla 1
+    Tabla 3 → requiere 10/10 en tabla 2
+    ...
+    Tabla 10 → requiere 10/10 en tabla 9
 
-- Número de preguntas.
-- Vidas.
-- Puntos.
-- Tablas importantes.
-- Mensajes.
-- Dificultad.
-- Velocidad.
+    Funciona en:
+    ✔ PC
+    ✔ Celular
+    ✔ Tablet
 
-No necesita ninguna librería externa.
+    No necesita librerías externas.
 =========================================================
 */
 
@@ -28,10 +29,10 @@ No necesita ninguna librería externa.
 
 const CONFIG = {
 
-    // Cantidad de preguntas por partida
+    // Preguntas por partida
     preguntasPorPartida: 10,
 
-    // Cantidad inicial de vidas
+    // Vidas iniciales
     vidasIniciales: 3,
 
     // Tablas que queremos reforzar
@@ -41,7 +42,10 @@ const CONFIG = {
     puntosCorrectos: 10,
 
     // Monedas por respuesta correcta
-    monedasCorrectas: 2
+    monedasCorrectas: 2,
+
+    // Total de tablas
+    totalTablas: 10
 
 };
 
@@ -52,31 +56,22 @@ const CONFIG = {
 
 let estado = {
 
-    // Tabla seleccionada
-    tabla: 4,
+    tabla: 1,
 
-    // Pregunta actual
     pregunta: 0,
 
-    // Aciertos
     aciertos: 0,
 
-    // Puntos
     puntos: 0,
 
-    // Monedas
     monedas: 0,
 
-    // Racha
     racha: 0,
 
-    // Vidas
     vidas: CONFIG.vidasIniciales,
 
-    // Pregunta actual
     operacion: null,
 
-    // Juego activo
     jugando: false
 
 };
@@ -84,29 +79,224 @@ let estado = {
 
 /* =====================================================
    PROGRESO GUARDADO
+   =====================================================
 
-   Guardamos qué tablas ya completó.
+   NUEVO SISTEMA:
 
-   Ejemplo:
+   {
+       desbloqueada: 1,
+
+       estrellas: {
+           1: 3,
+           2: 2,
+           3: 1
+       }
+   }
+
+   "desbloqueada" indica hasta qué tabla
+   puede acceder.
+
+   "estrellas" guarda el mejor resultado
+   obtenido en cada tabla.
+
+   ===================================================== */
+
+
+/* =====================================================
+   CARGAR PROGRESO
+   ===================================================== */
+
+let progresoGuardado = null;
+
+try {
+
+    progresoGuardado =
+        JSON.parse(
+            localStorage.getItem(
+                "progresoTablasKaori"
+            )
+        );
+
+} catch (error) {
+
+    progresoGuardado = null;
+
+}
+
+
+/* =====================================================
+   MIGRACIÓN DEL SISTEMA ANTERIOR
+   =====================================================
+
+   Si el juego anterior tenía:
 
    {
        "1": 3,
-       "2": 2,
-       "4": 1
+       "2": 2
    }
 
-   3 = tres estrellas
-   2 = dos estrellas
-   1 = una estrella
-   0 = sin completar
+   lo convertimos automáticamente a:
+
+   {
+       desbloqueada: 3,
+       estrellas: {
+           1: 3,
+           2: 2
+       }
+   }
+
    ===================================================== */
 
-let progreso =
-    JSON.parse(
-        localStorage.getItem(
-            "progresoTablasKaori"
-        )
-    ) || {};
+let progreso;
+
+
+/* Si no existe progreso */
+
+if (!progresoGuardado) {
+
+    progreso = {
+
+        desbloqueada: 1,
+
+        estrellas: {}
+
+    };
+
+}
+
+
+/* Si existe el nuevo formato */
+
+else if (
+    progresoGuardado.desbloqueada !== undefined &&
+    progresoGuardado.estrellas !== undefined
+) {
+
+    progreso = progresoGuardado;
+
+}
+
+
+/* Si existe el formato antiguo */
+
+else {
+
+    progreso = {
+
+        desbloqueada: 1,
+
+        estrellas: {}
+
+    };
+
+
+    /*
+    Copiamos las estrellas antiguas.
+    */
+
+    for (
+        let i = 1;
+        i <= CONFIG.totalTablas;
+        i++
+    ) {
+
+        if (
+            progresoGuardado[i]
+        ) {
+
+            progreso.estrellas[i] =
+                Number(
+                    progresoGuardado[i]
+                );
+
+        }
+
+    }
+
+
+    /*
+    Calculamos hasta qué tabla
+    debería estar desbloqueada.
+
+    Una tabla se considera superada
+    solamente con 10/10.
+
+    Como el sistema antiguo solo
+    guardaba estrellas:
+
+    3 estrellas = 10/10
+
+    */
+
+    let siguienteDesbloqueada = 1;
+
+
+    for (
+        let i = 1;
+        i <= CONFIG.totalTablas;
+        i++
+    ) {
+
+        if (
+            progreso.estrellas[i] === 3
+        ) {
+
+            siguienteDesbloqueada = i + 1;
+
+        } else {
+
+            break;
+
+        }
+
+    }
+
+
+    progreso.desbloqueada =
+        Math.min(
+            siguienteDesbloqueada,
+            CONFIG.totalTablas
+        );
+
+
+    guardarProgreso();
+
+}
+
+
+/* =====================================================
+   ASEGURAR DATOS CORRECTOS
+   ===================================================== */
+
+if (
+    !progreso.estrellas ||
+    typeof progreso.estrellas !== "object"
+) {
+
+    progreso.estrellas = {};
+
+}
+
+
+if (
+    !progreso.desbloqueada ||
+    progreso.desbloqueada < 1
+) {
+
+    progreso.desbloqueada = 1;
+
+}
+
+
+if (
+    progreso.desbloqueada >
+    CONFIG.totalTablas
+) {
+
+    progreso.desbloqueada =
+        CONFIG.totalTablas;
+
+}
 
 
 /* =====================================================
@@ -114,7 +304,9 @@ let progreso =
    ===================================================== */
 
 const pantallas =
-    document.querySelectorAll(".pantalla");
+    document.querySelectorAll(
+        ".pantalla"
+    );
 
 
 const pantallaInicio =
@@ -322,14 +514,35 @@ const btnVoz =
 
 
 /* =====================================================
+   GUARDAR PROGRESO
+   ===================================================== */
+
+function guardarProgreso() {
+
+    try {
+
+        localStorage.setItem(
+            "progresoTablasKaori",
+            JSON.stringify(progreso)
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "No se pudo guardar el progreso.",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
    CAMBIAR DE PANTALLA
    ===================================================== */
 
 function mostrarPantalla(id) {
-
-    /*
-    Ocultamos todas.
-    */
 
     pantallas.forEach(
         pantalla => {
@@ -341,10 +554,6 @@ function mostrarPantalla(id) {
         }
     );
 
-
-    /*
-    Mostramos la seleccionada.
-    */
 
     const pantalla =
         document.getElementById(id);
@@ -365,36 +574,44 @@ function mostrarPantalla(id) {
    BOTÓN JUGAR
    ===================================================== */
 
-btnJugar.addEventListener(
-    "click",
-    () => {
+if (btnJugar) {
 
-        mostrarPantalla(
-            "pantallaMapa"
-        );
+    btnJugar.addEventListener(
+        "click",
+        () => {
 
-        actualizarMapa();
+            mostrarPantalla(
+                "pantallaMapa"
+            );
 
-    }
-);
+            actualizarMapa();
+
+        }
+    );
+
+}
 
 
 /* =====================================================
    BOTÓN VER TABLAS
    ===================================================== */
 
-btnTablas.addEventListener(
-    "click",
-    () => {
+if (btnTablas) {
 
-        mostrarPantalla(
-            "pantallaTablas"
-        );
+    btnTablas.addEventListener(
+        "click",
+        () => {
 
-        mostrarTablaAprender(4);
+            mostrarPantalla(
+                "pantallaTablas"
+            );
 
-    }
-);
+            mostrarTablaAprender(4);
+
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -433,19 +650,22 @@ function actualizarProgresoInicio() {
 
 
     /*
-    Contamos tablas con al menos
-    una estrella.
+    Una tabla cuenta como completada
+    cuando consiguió 10/10.
+
+    Eso equivale a 3 estrellas.
     */
 
     for (
         let i = 1;
-        i <= 10;
+        i <= CONFIG.totalTablas;
         i++
     ) {
 
         if (
-            progreso[i] &&
-            progreso[i] > 0
+            Number(
+                progreso.estrellas[i]
+            ) === 3
         ) {
 
             completadas++;
@@ -455,12 +675,23 @@ function actualizarProgresoInicio() {
     }
 
 
-    progresoTexto.textContent =
-        `${completadas} / 10`;
+    if (progresoTexto) {
+
+        progresoTexto.textContent =
+            `${completadas} / ${CONFIG.totalTablas}`;
+
+    }
 
 
-    barraInicio.style.width =
-        `${completadas * 10}%`;
+    if (barraInicio) {
+
+        barraInicio.style.width =
+            `${(
+                completadas /
+                CONFIG.totalTablas
+            ) * 100}%`;
+
+    }
 
 }
 
@@ -490,24 +721,119 @@ function actualizarMapa() {
 
 
             /*
-            Obtenemos las estrellas.
+            Quitamos estados anteriores.
             */
 
-            const estrellas =
-                progreso[numero] || 0;
+            nivel.classList.remove(
+                "bloqueado",
+                "completado",
+                "actual"
+            );
 
 
-            const elementoEstrellas =
-                nivel.querySelector(
-                    ".estrellas"
+            /*
+            Permitimos o bloqueamos
+            el botón según el progreso.
+            */
+
+            if (
+                numero <=
+                progreso.desbloqueada
+            ) {
+
+                /*
+                TABLA DESBLOQUEADA
+                */
+
+                nivel.disabled = false;
+
+
+                /*
+                Estrellas.
+                */
+
+                const estrellas =
+                    Number(
+                        progreso.estrellas[numero]
+                    ) || 0;
+
+
+                const elementoEstrellas =
+                    nivel.querySelector(
+                        ".estrellas"
+                    );
+
+
+                if (elementoEstrellas) {
+
+                    elementoEstrellas.textContent =
+                        "★".repeat(estrellas) +
+                        "☆".repeat(
+                            3 - estrellas
+                        );
+
+                }
+
+
+                /*
+                Si tiene 3 estrellas,
+                la marcamos como completada.
+                */
+
+                if (
+                    estrellas === 3
+                ) {
+
+                    nivel.classList.add(
+                        "completado"
+                    );
+
+                }
+
+
+                /*
+                Tabla que está actualmente
+                disponible para avanzar.
+                */
+
+                if (
+                    numero ===
+                    progreso.desbloqueada
+                ) {
+
+                    nivel.classList.add(
+                        "actual"
+                    );
+
+                }
+
+            }
+
+            else {
+
+                /*
+                TABLA BLOQUEADA
+                */
+
+                nivel.disabled = true;
+
+                nivel.classList.add(
+                    "bloqueado"
                 );
 
 
-            if (elementoEstrellas) {
+                const elementoEstrellas =
+                    nivel.querySelector(
+                        ".estrellas"
+                    );
 
-                elementoEstrellas.textContent =
-                    "★".repeat(estrellas) +
-                    "☆".repeat(3 - estrellas);
+
+                if (elementoEstrellas) {
+
+                    elementoEstrellas.textContent =
+                        "🔒";
+
+                }
 
             }
 
@@ -538,6 +864,26 @@ document
                         );
 
 
+                    /*
+                    SEGURIDAD:
+                    No permitimos entrar a
+                    tablas bloqueadas.
+                    */
+
+                    if (
+                        tabla >
+                        progreso.desbloqueada
+                    ) {
+
+                        mostrarMensajeBloqueo(
+                            tabla
+                        );
+
+                        return;
+
+                    }
+
+
                     iniciarJuego(
                         tabla
                     );
@@ -550,10 +896,50 @@ document
 
 
 /* =====================================================
+   MENSAJE DE TABLA BLOQUEADA
+   ===================================================== */
+
+function mostrarMensajeBloqueo(
+    tabla
+) {
+
+    const anterior =
+        tabla - 1;
+
+
+    alert(
+        `🔒 TABLA DEL ${tabla} BLOQUEADA\n\n` +
+        `Primero debes completar la tabla del ${anterior} ` +
+        `con 10 respuestas correctas de 10.\n\n` +
+        `💪 ¡Tú puedes!`
+    );
+
+}
+
+
+/* =====================================================
    INICIAR JUEGO
    ===================================================== */
 
 function iniciarJuego(tabla) {
+
+    /*
+    Seguridad adicional.
+    */
+
+    if (
+        tabla >
+        progreso.desbloqueada
+    ) {
+
+        mostrarMensajeBloqueo(
+            tabla
+        );
+
+        return;
+
+    }
+
 
     /*
     Reiniciamos estado.
@@ -584,6 +970,20 @@ function iniciarJuego(tabla) {
 
 
     /*
+    Cerramos Game Over
+    por seguridad.
+    */
+
+    if (modalGameOver) {
+
+        modalGameOver.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+    /*
     Mostramos pantalla.
     */
 
@@ -593,11 +993,15 @@ function iniciarJuego(tabla) {
 
 
     /*
-    Actualizamos tabla.
+    Mostramos número de tabla.
     */
 
-    tablaJuego.textContent =
-        tabla;
+    if (tablaJuego) {
+
+        tablaJuego.textContent =
+            tabla;
+
+    }
 
 
     /*
@@ -608,7 +1012,7 @@ function iniciarJuego(tabla) {
 
 
     /*
-    Primera pregunta.
+    Generamos primera pregunta.
     */
 
     nuevaPregunta();
@@ -644,8 +1048,7 @@ function nuevaPregunta() {
 
 
     /*
-    Si ya completamos las preguntas,
-    terminamos.
+    Si completamos las 10 preguntas.
     */
 
     if (
@@ -661,16 +1064,28 @@ function nuevaPregunta() {
 
 
     /*
-    Aumentamos número de pregunta.
+    Ocultamos botón siguiente
+    mientras aparece la nueva pregunta.
+    */
+
+    if (btnSiguiente) {
+
+        btnSiguiente.classList.add(
+            "oculto"
+        );
+
+    }
+
+
+    /*
+    Aumentamos pregunta.
     */
 
     estado.pregunta++;
 
 
     /*
-    Primer factor.
-
-    Es la tabla seleccionada.
+    Tabla seleccionada.
     */
 
     const a =
@@ -679,8 +1094,6 @@ function nuevaPregunta() {
 
     /*
     Segundo factor.
-
-    Entre 0 y 10.
     */
 
     const b =
@@ -706,27 +1119,39 @@ function nuevaPregunta() {
     Mostramos operación.
     */
 
-    operacion.textContent =
-        `${a} × ${b} = ?`;
+    if (operacion) {
+
+        operacion.textContent =
+            `${a} × ${b} = ?`;
+
+    }
 
 
     /*
-    Actualizamos contador.
+    Contador.
     */
 
-    contadorPregunta.textContent =
-        `${estado.pregunta} / ${CONFIG.preguntasPorPartida}`;
+    if (contadorPregunta) {
+
+        contadorPregunta.textContent =
+            `${estado.pregunta} / ${CONFIG.preguntasPorPartida}`;
+
+    }
 
 
     /*
-    Actualizamos barra.
+    Barra de progreso.
     */
 
-    barraPregunta.style.width =
-        `${(
-            estado.pregunta /
-            CONFIG.preguntasPorPartida
-        ) * 100}%`;
+    if (barraPregunta) {
+
+        barraPregunta.style.width =
+            `${(
+                estado.pregunta /
+                CONFIG.preguntasPorPartida
+            ) * 100}%`;
+
+    }
 
 
     /*
@@ -737,7 +1162,7 @@ function nuevaPregunta() {
 
 
     /*
-    Mensaje motivador.
+    Mensaje.
     */
 
     mensajesMotivadores();
@@ -751,9 +1176,12 @@ function nuevaPregunta() {
 
 function generarRespuestas() {
 
-    /*
-    Limpiamos respuestas anteriores.
-    */
+    if (!respuestas) {
+
+        return;
+
+    }
+
 
     respuestas.innerHTML = "";
 
@@ -762,17 +1190,12 @@ function generarRespuestas() {
         estado.operacion.respuesta;
 
 
-    /*
-    Usamos un Set para no repetir
-    respuestas.
-    */
-
     const opciones =
         new Set();
 
 
     /*
-    Añadimos respuesta correcta.
+    Respuesta correcta.
     */
 
     opciones.add(
@@ -781,31 +1204,52 @@ function generarRespuestas() {
 
 
     /*
-    Creamos 3 respuestas falsas.
+    Creamos respuestas falsas.
     */
 
     while (
         opciones.size < 4
     ) {
 
-        /*
-        Variación pequeña alrededor
-        de la respuesta correcta.
-
-        Esto hace que las opciones
-        sean razonables para una niña.
-        */
-
-        let falsa =
-            correcta +
-            aleatorio(-10, 10);
+        let falsa;
 
 
         /*
-        No permitimos negativos.
+        Para tablas importantes
+        usamos opciones razonables.
+
+        Para las demás también mantenemos
+        dificultad sencilla.
         */
 
-        if (falsa < 0) {
+        if (
+            CONFIG.tablasImportantes.includes(
+                estado.tabla
+            )
+        ) {
+
+            falsa =
+                correcta +
+                aleatorio(-10, 10);
+
+        }
+
+        else {
+
+            falsa =
+                correcta +
+                aleatorio(-8, 8);
+
+        }
+
+
+        /*
+        Evitamos negativos.
+        */
+
+        if (
+            falsa < 0
+        ) {
 
             falsa =
                 Math.abs(falsa);
@@ -814,7 +1258,7 @@ function generarRespuestas() {
 
 
         /*
-        Evitamos que sea igual.
+        Evitamos duplicados.
         */
 
         if (
@@ -831,7 +1275,7 @@ function generarRespuestas() {
 
 
     /*
-    Convertimos a array y mezclamos.
+    Convertimos y mezclamos.
     */
 
     const lista =
@@ -842,7 +1286,7 @@ function generarRespuestas() {
 
 
     /*
-    Creamos los botones.
+    Creamos botones.
     */
 
     lista.forEach(
@@ -863,13 +1307,16 @@ function generarRespuestas() {
 
 
             /*
-            También permite utilizar
-            teclado 1, 2, 3 y 4.
+            Número de opción.
             */
 
             boton.dataset.indice =
                 indice + 1;
 
+
+            /*
+            Click / toque.
+            */
 
             boton.addEventListener(
                 "click",
@@ -935,10 +1382,6 @@ function comprobarRespuesta(
     boton
 ) {
 
-    /*
-    Evitamos responder dos veces.
-    */
-
     if (!estado.jugando) {
 
         return;
@@ -947,7 +1390,7 @@ function comprobarRespuesta(
 
 
     /*
-    Desactivamos todos los botones.
+    Desactivamos todas las respuestas.
     */
 
     document
@@ -964,7 +1407,7 @@ function comprobarRespuesta(
 
 
     /*
-    Verificamos.
+    Comprobamos.
     */
 
     if (
@@ -976,7 +1419,9 @@ function comprobarRespuesta(
             boton
         );
 
-    } else {
+    }
+
+    else {
 
         respuestaIncorrecta(
             boton
@@ -995,34 +1440,40 @@ function respuestaCorrecta(
     boton
 ) {
 
+    if (boton) {
+
+        boton.classList.add(
+            "correcta"
+        );
+
+    }
+
+
     /*
-    Marcamos botón.
-    */
-
-    boton.classList.add(
-        "correcta"
-    );
-
-
-    /*
-    Aumentamos estadísticas.
+    Acierto.
     */
 
     estado.aciertos++;
+
+
+    /*
+    Racha.
+    */
 
     estado.racha++;
 
 
     /*
-    Puntos extra por racha.
-
-    Cada 3 aciertos consecutivos
-    obtenemos puntos adicionales.
+    Puntos.
     */
 
     let puntos =
         CONFIG.puntosCorrectos;
 
+
+    /*
+    Bonus por racha.
+    */
 
     if (
         estado.racha >= 3
@@ -1037,45 +1488,61 @@ function respuestaCorrecta(
         puntos;
 
 
+    /*
+    Monedas.
+    */
+
     estado.monedas +=
         CONFIG.monedasCorrectas;
 
 
     /*
-    Animamos personaje.
+    Animación personaje.
     */
 
-    personaje.classList.remove(
-        "incorrecto"
-    );
+    if (personaje) {
 
-    personaje.classList.add(
-        "correcto"
-    );
+        personaje.classList.remove(
+            "incorrecto"
+        );
+
+        personaje.classList.add(
+            "correcto"
+        );
+
+    }
 
 
     /*
     Mensaje.
     */
 
-    if (
-        estado.racha >= 5
-    ) {
+    if (burbuja) {
 
-        burbuja.textContent =
-            "🔥 ¡INCREÍBLE!";
+        if (
+            estado.racha >= 5
+        ) {
 
-    } else if (
-        estado.racha >= 3
-    ) {
+            burbuja.textContent =
+                "🔥 ¡INCREÍBLE!";
 
-        burbuja.textContent =
-            "⭐ ¡Qué buena racha!";
+        }
 
-    } else {
+        else if (
+            estado.racha >= 3
+        ) {
 
-        burbuja.textContent =
-            "🎉 ¡Muy bien!";
+            burbuja.textContent =
+                "⭐ ¡Qué buena racha!";
+
+        }
+
+        else {
+
+            burbuja.textContent =
+                "🎉 ¡Muy bien!";
+
+        }
 
     }
 
@@ -1088,38 +1555,39 @@ function respuestaCorrecta(
 
 
     /*
-    Actualizamos.
+    Actualizamos interfaz.
     */
 
     actualizarInterfaz();
 
 
     /*
-    Mostramos botón.
+    Mostramos siguiente.
     */
 
-    btnSiguiente.classList.remove(
-        "oculto"
-    );
+    if (btnSiguiente) {
+
+        btnSiguiente.classList.remove(
+            "oculto"
+        );
 
 
-    /*
-    Si es la última pregunta,
-    cambiamos texto.
-    */
+        if (
+            estado.pregunta >=
+            CONFIG.preguntasPorPartida
+        ) {
 
-    if (
-        estado.pregunta >=
-        CONFIG.preguntasPorPartida
-    ) {
+            btnSiguiente.textContent =
+                "🏆 VER RESULTADO";
 
-        btnSiguiente.textContent =
-            "🏆 VER RESULTADO";
+        }
 
-    } else {
+        else {
 
-        btnSiguiente.textContent =
-            "SIGUIENTE →";
+            btnSiguiente.textContent =
+                "SIGUIENTE →";
+
+        }
 
     }
 
@@ -1134,18 +1602,17 @@ function respuestaIncorrecta(
     boton
 ) {
 
+    if (boton) {
+
+        boton.classList.add(
+            "incorrecta"
+        );
+
+    }
+
+
     /*
-    Marcamos incorrecta.
-    */
-
-    boton.classList.add(
-        "incorrecta"
-    );
-
-
-    /*
-    Buscamos y marcamos
-    automáticamente la correcta.
+    Marcamos la correcta.
     */
 
     document
@@ -1156,7 +1623,9 @@ function respuestaIncorrecta(
             b => {
 
                 if (
-                    Number(b.textContent) ===
+                    Number(
+                        b.textContent
+                    ) ===
                     estado.operacion.respuesta
                 ) {
 
@@ -1171,7 +1640,7 @@ function respuestaIncorrecta(
 
 
     /*
-    Quitamos una vida.
+    Quitamos vida.
     */
 
     estado.vidas--;
@@ -1188,21 +1657,29 @@ function respuestaIncorrecta(
     Mensaje.
     */
 
-    burbuja.textContent =
-        `💡 Era ${estado.operacion.respuesta}`;
+    if (burbuja) {
+
+        burbuja.textContent =
+            `💡 Era ${estado.operacion.respuesta}`;
+
+    }
 
 
     /*
     Animación.
     */
 
-    personaje.classList.remove(
-        "correcto"
-    );
+    if (personaje) {
 
-    personaje.classList.add(
-        "incorrecto"
-    );
+        personaje.classList.remove(
+            "correcto"
+        );
+
+        personaje.classList.add(
+            "incorrecto"
+        );
+
+    }
 
 
     /*
@@ -1213,14 +1690,14 @@ function respuestaIncorrecta(
 
 
     /*
-    Actualizamos interfaz.
+    Actualizamos.
     */
 
     actualizarInterfaz();
 
 
     /*
-    Si no quedan vidas...
+    GAME OVER
     */
 
     if (
@@ -1238,26 +1715,32 @@ function respuestaIncorrecta(
 
 
     /*
-    Permitimos siguiente.
+    Permitir continuar.
     */
 
-    btnSiguiente.classList.remove(
-        "oculto"
-    );
+    if (btnSiguiente) {
+
+        btnSiguiente.classList.remove(
+            "oculto"
+        );
 
 
-    if (
-        estado.pregunta >=
-        CONFIG.preguntasPorPartida
-    ) {
+        if (
+            estado.pregunta >=
+            CONFIG.preguntasPorPartida
+        ) {
 
-        btnSiguiente.textContent =
-            "🏆 VER RESULTADO";
+            btnSiguiente.textContent =
+                "🏆 VER RESULTADO";
 
-    } else {
+        }
 
-        btnSiguiente.textContent =
-            "SIGUIENTE →";
+        else {
+
+            btnSiguiente.textContent =
+                "SIGUIENTE →";
+
+        }
 
     }
 
@@ -1268,37 +1751,33 @@ function respuestaIncorrecta(
    BOTÓN SIGUIENTE
    ===================================================== */
 
-btnSiguiente.addEventListener(
-    "click",
-    () => {
+if (btnSiguiente) {
 
-        /*
-        Ocultamos botón.
-        */
+    btnSiguiente.addEventListener(
+        "click",
+        () => {
 
-        btnSiguiente.classList.add(
-            "oculto"
-        );
+            btnSiguiente.classList.add(
+                "oculto"
+            );
 
 
-        /*
-        Quitamos animaciones.
-        */
+            if (personaje) {
 
-        personaje.classList.remove(
-            "correcto",
-            "incorrecto"
-        );
+                personaje.classList.remove(
+                    "correcto",
+                    "incorrecto"
+                );
+
+            }
 
 
-        /*
-        Nueva pregunta.
-        */
+            nuevaPregunta();
 
-        nuevaPregunta();
+        }
+    );
 
-    }
-);
+}
 
 
 /* =====================================================
@@ -1307,30 +1786,48 @@ btnSiguiente.addEventListener(
 
 function actualizarInterfaz() {
 
-    puntosElemento.textContent =
-        estado.puntos;
+    if (puntosElemento) {
+
+        puntosElemento.textContent =
+            estado.puntos;
+
+    }
 
 
-    rachaElemento.textContent =
-        estado.racha;
+    if (rachaElemento) {
+
+        rachaElemento.textContent =
+            estado.racha;
+
+    }
 
 
-    monedasElemento.textContent =
-        estado.monedas;
+    if (monedasElemento) {
+
+        monedasElemento.textContent =
+            estado.monedas;
+
+    }
 
 
-    /*
-    Dibujamos las vidas.
-    */
+    if (vidasElemento) {
 
-    vidasElemento.textContent =
-        "❤️".repeat(
-            estado.vidas
-        ) +
-        "🖤".repeat(
-            CONFIG.vidasIniciales -
-            estado.vidas
-        );
+        vidasElemento.textContent =
+            "❤️".repeat(
+                Math.max(
+                    0,
+                    estado.vidas
+                )
+            ) +
+            "🖤".repeat(
+                Math.max(
+                    0,
+                    CONFIG.vidasIniciales -
+                    estado.vidas
+                )
+            );
+
+    }
 
 }
 
@@ -1353,18 +1850,28 @@ function mensajesMotivadores() {
 
         "¡Cada pregunta te hace más fuerte! 🚀",
 
-        "¡Confía en ti! 🌟"
+        "¡Confía en ti! 🌟",
+
+        "¡Tú eres capaz! 🔥",
+
+        "¡Vamos por la siguiente! 🎯",
+
+        "¡Excelente esfuerzo! 🏆"
 
     ];
 
 
-    burbuja.textContent =
-        mensajes[
-            aleatorio(
-                0,
-                mensajes.length - 1
-            )
-        ];
+    if (burbuja) {
+
+        burbuja.textContent =
+            mensajes[
+                aleatorio(
+                    0,
+                    mensajes.length - 1
+                )
+            ];
+
+    }
 
 }
 
@@ -1381,10 +1888,10 @@ function terminarPartida() {
     /*
     Calculamos estrellas.
 
-    10 aciertos = 3 estrellas
+    10/10 = 3 estrellas
     7-9 = 2 estrellas
     5-6 = 1 estrella
-    menos de 5 = 0
+    0-4 = 0 estrellas
     */
 
     let estrellas = 0;
@@ -1422,28 +1929,82 @@ function terminarPartida() {
     */
 
     const anterior =
-        progreso[
-            estado.tabla
-        ] || 0;
+        Number(
+            progreso.estrellas[
+                estado.tabla
+            ]
+        ) || 0;
 
 
     if (
         estrellas > anterior
     ) {
 
-        progreso[
+        progreso.estrellas[
             estado.tabla
         ] = estrellas;
 
+    }
 
-        localStorage.setItem(
-            "progresoTablasKaori",
-            JSON.stringify(
-                progreso
-            )
-        );
+
+    /* =================================================
+       DESBLOQUEO
+       =================================================
+
+       MUY IMPORTANTE:
+
+       Solamente con 10/10 se desbloquea
+       la siguiente tabla.
+
+       Ejemplo:
+
+       Tabla 1 → 10/10 → Tabla 2 🔓
+
+       Tabla 2 → 10/10 → Tabla 3 🔓
+
+       etc.
+
+       ================================================= */
+
+    let tablaDesbloqueada = false;
+
+
+    if (
+        estado.aciertos ===
+        CONFIG.preguntasPorPartida
+    ) {
+
+        /*
+        Solo desbloqueamos si estamos
+        jugando la última tabla disponible.
+        */
+
+        if (
+            estado.tabla ===
+            progreso.desbloqueada
+        ) {
+
+            if (
+                progreso.desbloqueada <
+                CONFIG.totalTablas
+            ) {
+
+                progreso.desbloqueada++;
+
+                tablaDesbloqueada = true;
+
+            }
+
+        }
 
     }
+
+
+    /*
+    Guardamos SIEMPRE el progreso.
+    */
+
+    guardarProgreso();
 
 
     /*
@@ -1451,7 +2012,8 @@ function terminarPartida() {
     */
 
     mostrarResultado(
-        estrellas
+        estrellas,
+        tablaDesbloqueada
     );
 
 }
@@ -1462,7 +2024,8 @@ function terminarPartida() {
    ===================================================== */
 
 function mostrarResultado(
-    estrellas
+    estrellas,
+    tablaDesbloqueada = false
 ) {
 
     mostrarPantalla(
@@ -1470,40 +2033,80 @@ function mostrarResultado(
     );
 
 
-    resultadoAciertos.textContent =
-        `${estado.aciertos}/${CONFIG.preguntasPorPartida}`;
+    if (resultadoAciertos) {
+
+        resultadoAciertos.textContent =
+            `${estado.aciertos}/${CONFIG.preguntasPorPartida}`;
+
+    }
 
 
-    resultadoPuntos.textContent =
-        estado.puntos;
+    if (resultadoPuntos) {
+
+        resultadoPuntos.textContent =
+            estado.puntos;
+
+    }
 
 
     /*
-    Estrellas visuales.
+    Estrella 1.
     */
 
-    document.getElementById(
-        "estrella1"
-    ).textContent =
-        estrellas >= 1
-            ? "★"
-            : "☆";
+    const estrella1 =
+        document.getElementById(
+            "estrella1"
+        );
 
 
-    document.getElementById(
-        "estrella2"
-    ).textContent =
-        estrellas >= 2
-            ? "★"
-            : "☆";
+    if (estrella1) {
+
+        estrella1.textContent =
+            estrellas >= 1
+                ? "★"
+                : "☆";
+
+    }
 
 
-    document.getElementById(
-        "estrella3"
-    ).textContent =
-        estrellas >= 3
-            ? "★"
-            : "☆";
+    /*
+    Estrella 2.
+    */
+
+    const estrella2 =
+        document.getElementById(
+            "estrella2"
+        );
+
+
+    if (estrella2) {
+
+        estrella2.textContent =
+            estrellas >= 2
+                ? "★"
+                : "☆";
+
+    }
+
+
+    /*
+    Estrella 3.
+    */
+
+    const estrella3 =
+        document.getElementById(
+            "estrella3"
+        );
+
+
+    if (estrella3) {
+
+        estrella3.textContent =
+            estrellas >= 3
+                ? "★"
+                : "☆";
+
+    }
 
 
     /*
@@ -1514,43 +2117,109 @@ function mostrarResultado(
         estrellas === 3
     ) {
 
-        tituloResultado.textContent =
-            "🏆 ¡PERFECTO!";
+        if (tituloResultado) {
+
+            tituloResultado.textContent =
+                "🏆 ¡PERFECTO!";
+
+        }
 
 
-        textoResultado.textContent =
-            "¡Dominaste esta tabla!";
+        if (textoResultado) {
 
-    } else if (
+            if (
+                tablaDesbloqueada
+            ) {
+
+                if (
+                    estado.tabla <
+                    CONFIG.totalTablas
+                ) {
+
+                    textoResultado.textContent =
+                        `🎉 ¡Dominaste la tabla del ${estado.tabla}! ` +
+                        `🔓 ¡La tabla del ${estado.tabla + 1} está desbloqueada!`;
+
+                }
+
+                else {
+
+                    textoResultado.textContent =
+                        "👑 ¡INCREÍBLE! ¡Has completado todas las tablas del 1 al 10!";
+
+                }
+
+            }
+
+            else {
+
+                textoResultado.textContent =
+                    "¡Dominaste esta tabla!";
+
+            }
+
+        }
+
+    }
+
+    else if (
         estrellas === 2
     ) {
 
-        tituloResultado.textContent =
-            "⭐ ¡MUY BIEN!";
+        if (tituloResultado) {
+
+            tituloResultado.textContent =
+                "⭐ ¡MUY BIEN!";
+
+        }
 
 
-        textoResultado.textContent =
-            "Ya casi eres un experto.";
+        if (textoResultado) {
 
-    } else if (
+            textoResultado.textContent =
+                "Ya casi eres un experto. ¡Necesitas 10/10 para desbloquear la siguiente tabla!";
+
+        }
+
+    }
+
+    else if (
         estrellas === 1
     ) {
 
-        tituloResultado.textContent =
-            "💪 ¡BUEN TRABAJO!";
+        if (tituloResultado) {
+
+            tituloResultado.textContent =
+                "💪 ¡BUEN TRABAJO!";
+
+        }
 
 
-        textoResultado.textContent =
-            "Sigue practicando y mejorarás.";
+        if (textoResultado) {
 
-    } else {
+            textoResultado.textContent =
+                "Sigue practicando. ¡Consigue 10/10 para desbloquear la siguiente tabla!";
 
-        tituloResultado.textContent =
-            "🌟 ¡SIGUE INTENTANDO!";
+        }
+
+    }
+
+    else {
+
+        if (tituloResultado) {
+
+            tituloResultado.textContent =
+                "🌟 ¡SIGUE INTENTANDO!";
+
+        }
 
 
-        textoResultado.textContent =
-            "La práctica te ayudará a aprender.";
+        if (textoResultado) {
+
+            textoResultado.textContent =
+                "La práctica te ayudará a aprender. ¡Vuelve a intentarlo!";
+
+        }
 
     }
 
@@ -1569,100 +2238,134 @@ function mostrarGameOver() {
     estado.jugando = false;
 
 
-    modalGameOver.classList.remove(
-        "oculto"
+    if (modalGameOver) {
+
+        modalGameOver.classList.remove(
+            "oculto"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   REINTENTAR GAME OVER
+   ===================================================== */
+
+if (btnReintentar) {
+
+    btnReintentar.addEventListener(
+        "click",
+        () => {
+
+            if (modalGameOver) {
+
+                modalGameOver.classList.add(
+                    "oculto"
+                );
+
+            }
+
+
+            iniciarJuego(
+                estado.tabla
+            );
+
+        }
     );
 
 }
 
 
 /* =====================================================
-   REINTENTAR DESDE GAME OVER
+   VOLVER AL MAPA GAME OVER
    ===================================================== */
 
-btnReintentar.addEventListener(
-    "click",
-    () => {
+if (btnGameOverMapa) {
 
-        modalGameOver.classList.add(
-            "oculto"
-        );
+    btnGameOverMapa.addEventListener(
+        "click",
+        () => {
 
+            if (modalGameOver) {
 
-        iniciarJuego(
-            estado.tabla
-        );
+                modalGameOver.classList.add(
+                    "oculto"
+                );
 
-    }
-);
+            }
 
 
-/* =====================================================
-   VOLVER AL MAPA DESDE GAME OVER
-   ===================================================== */
-
-btnGameOverMapa.addEventListener(
-    "click",
-    () => {
-
-        modalGameOver.classList.add(
-            "oculto"
-        );
+            mostrarPantalla(
+                "pantallaMapa"
+            );
 
 
-        mostrarPantalla(
-            "pantallaMapa"
-        );
+            actualizarMapa();
 
+        }
+    );
 
-        actualizarMapa();
-
-    }
-);
+}
 
 
 /* =====================================================
    REPETIR PARTIDA
    ===================================================== */
 
-btnRepetir.addEventListener(
-    "click",
-    () => {
+if (btnRepetir) {
 
-        iniciarJuego(
-            estado.tabla
-        );
+    btnRepetir.addEventListener(
+        "click",
+        () => {
 
-    }
-);
+            iniciarJuego(
+                estado.tabla
+            );
+
+        }
+    );
+
+}
 
 
 /* =====================================================
    VOLVER AL MAPA DESDE RESULTADO
    ===================================================== */
 
-btnMapaResultado.addEventListener(
-    "click",
-    () => {
+if (btnMapaResultado) {
 
-        mostrarPantalla(
-            "pantallaMapa"
-        );
+    btnMapaResultado.addEventListener(
+        "click",
+        () => {
+
+            mostrarPantalla(
+                "pantallaMapa"
+            );
 
 
-        actualizarMapa();
+            actualizarMapa();
 
-    }
-);
+        }
+    );
+
+}
 
 
 /* =====================================================
    BOTÓN SALIR DEL JUEGO
    ===================================================== */
 
-document
-    .getElementById("btnSalir")
-    .addEventListener(
+const btnSalir =
+    document.getElementById(
+        "btnSalir"
+    );
+
+
+if (btnSalir) {
+
+    btnSalir.addEventListener(
         "click",
         () => {
 
@@ -1678,6 +2381,8 @@ document
 
         }
     );
+
+}
 
 
 /* =====================================================
@@ -1730,15 +2435,26 @@ function mostrarTablaAprender(
     tablaAprender = numero;
 
 
-    tablaAprenderNumero.textContent =
-        numero;
+    if (tablaAprenderNumero) {
+
+        tablaAprenderNumero.textContent =
+            numero;
+
+    }
+
+
+    if (!listaTabla) {
+
+        return;
+
+    }
 
 
     listaTabla.innerHTML = "";
 
 
     /*
-    Creamos del 0 al 10.
+    Del 0 al 10.
     */
 
     for (
@@ -1769,7 +2485,7 @@ function mostrarTablaAprender(
 
 
     /*
-    Marcamos botón.
+    Marcamos botón activo.
     */
 
     document
@@ -1796,71 +2512,69 @@ function mostrarTablaAprender(
    ESCUCHAR TABLA
    ===================================================== */
 
-btnVoz.addEventListener(
-    "click",
-    () => {
+if (btnVoz) {
 
-        /*
-        Verificamos si el navegador
-        tiene síntesis de voz.
-        */
+    btnVoz.addEventListener(
+        "click",
+        () => {
 
-        if (
-            !("speechSynthesis" in window)
-        ) {
+            if (
+                !(
+                    "speechSynthesis"
+                    in window
+                )
+            ) {
 
-            alert(
-                "Tu navegador no permite reproducir voz."
+                alert(
+                    "Tu navegador no permite reproducir voz."
+                );
+
+                return;
+
+            }
+
+
+            let texto =
+                `Tabla del ${tablaAprender}. `;
+
+
+            for (
+                let i = 0;
+                i <= 10;
+                i++
+            ) {
+
+                texto +=
+                    `${tablaAprender} por ${i} es ${tablaAprender * i}. `;
+
+            }
+
+
+            const voz =
+                new SpeechSynthesisUtterance(
+                    texto
+                );
+
+
+            voz.lang =
+                "es-ES";
+
+
+            voz.rate =
+                0.8;
+
+
+            speechSynthesis.cancel();
+
+
+            speechSynthesis.speak(
+                voz
             );
 
-            return;
-
         }
+    );
 
-
-        let texto =
-            `Tabla del ${tablaAprender}. `;
-
-
-        for (
-            let i = 0;
-            i <= 10;
-            i++
-        ) {
-
-            texto +=
-                `${tablaAprender} por ${i} es ${tablaAprender * i}. `;
-
-        }
-
-
-        const voz =
-            new SpeechSynthesisUtterance(
-                texto
-            );
-
-
-        voz.lang =
-            "es-ES";
-
-
-        /*
-        Velocidad lenta para facilitar
-        el aprendizaje.
-        */
-
-        voz.rate =
-            0.8;
-
-
-        speechSynthesis.cancel();
-
-        speechSynthesis.speak(
-            voz
-        );
-
-    }
-);
+}
 
 
 /* =====================================================
@@ -1871,10 +2585,6 @@ document.addEventListener(
     "keydown",
     evento => {
 
-        /*
-        Solamente funciona si estamos jugando.
-        */
-
         if (
             !estado.jugando
         ) {
@@ -1883,12 +2593,6 @@ document.addEventListener(
 
         }
 
-
-        /*
-        Teclas 1, 2, 3 y 4.
-
-        Permiten responder desde PC.
-        */
 
         const numero =
             Number(
@@ -1928,20 +2632,22 @@ document.addEventListener(
 
 function sonidoCorrecto() {
 
-    /*
-    Creamos sonido sin archivos externos.
-
-    Esto permite que el juego funcione
-    incluso sin conexión.
-    */
-
     try {
 
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) {
+
+            return;
+
+        }
+
+
         const audio =
-            new (
-                window.AudioContext ||
-                window.webkitAudioContext
-            )();
+            new AudioContext();
 
 
         const oscilador =
@@ -1977,11 +2683,12 @@ function sonidoCorrecto() {
             audio.currentTime + 0.12
         );
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         /*
-        Si el navegador bloquea audio,
-        simplemente continuamos.
+        Audio opcional.
         */
 
     }
@@ -1997,11 +2704,20 @@ function sonidoIncorrecto() {
 
     try {
 
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) {
+
+            return;
+
+        }
+
+
         const audio =
-            new (
-                window.AudioContext ||
-                window.webkitAudioContext
-            )();
+            new AudioContext();
 
 
         const oscilador =
@@ -2037,9 +2753,13 @@ function sonidoIncorrecto() {
             audio.currentTime + 0.18
         );
 
-    } catch (error) {
+    }
 
-        /* Sin sonido si el navegador lo bloquea */
+    catch (error) {
+
+        /*
+        Audio opcional.
+        */
 
     }
 
@@ -2047,18 +2767,27 @@ function sonidoIncorrecto() {
 
 
 /* =====================================================
-   SONIDO DE RESULTADO
+   SONIDO RESULTADO
    ===================================================== */
 
 function sonidoResultado() {
 
     try {
 
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) {
+
+            return;
+
+        }
+
+
         const audio =
-            new (
-                window.AudioContext ||
-                window.webkitAudioContext
-            )();
+            new AudioContext();
 
 
         const oscilador =
@@ -2094,9 +2823,13 @@ function sonidoResultado() {
             audio.currentTime + 0.25
         );
 
-    } catch (error) {
+    }
 
-        /* Audio opcional */
+    catch (error) {
+
+        /*
+        Audio opcional.
+        */
 
     }
 
@@ -2107,47 +2840,62 @@ function sonidoResultado() {
    REINICIAR TODO EL PROGRESO
    ===================================================== */
 
-btnReiniciar.addEventListener(
-    "click",
-    () => {
+if (btnReiniciar) {
 
-        const confirmar =
-            confirm(
-                "¿Seguro que quieres borrar todo el progreso?"
+    btnReiniciar.addEventListener(
+        "click",
+        () => {
+
+            const confirmar =
+                confirm(
+                    "¿Seguro que quieres borrar TODO el progreso?\n\n" +
+                    "Se bloquearán nuevamente las tablas del 2 al 10."
+                );
+
+
+            if (!confirmar) {
+
+                return;
+
+            }
+
+
+            /*
+            Volvemos al estado inicial.
+            */
+
+            progreso = {
+
+                desbloqueada: 1,
+
+                estrellas: {}
+
+            };
+
+
+            guardarProgreso();
+
+
+            /*
+            Actualizamos pantalla.
+            */
+
+            actualizarProgresoInicio();
+
+
+            actualizarMapa();
+
+
+            alert(
+                "🔄 ¡Progreso reiniciado!\n\n" +
+                "La tabla del 1 está desbloqueada.\n" +
+                "Completa 10/10 para desbloquear la tabla del 2."
             );
 
-
-        if (!confirmar) {
-
-            return;
-
         }
+    );
 
-
-        /*
-        Borramos progreso.
-        */
-
-        progreso = {};
-
-
-        localStorage.removeItem(
-            "progresoTablasKaori"
-        );
-
-
-        actualizarProgresoInicio();
-
-
-        actualizarMapa();
-
-
-        alert(
-            "¡Progreso reiniciado!"
-        );
-
-    }
-);
+}
 
 
 /* =====================================================
@@ -2164,9 +2912,15 @@ function iniciarAplicacion() {
 
 
     /*
+    Actualizamos mapa.
+    */
+
+    actualizarMapa();
+
+
+    /*
     Mostramos tabla 4 inicialmente
-    porque es una de las tablas
-    que queremos reforzar.
+    en la sección de aprendizaje.
     */
 
     mostrarTablaAprender(4);
@@ -2179,7 +2933,8 @@ function iniciarAplicacion() {
    ===================================================== */
 
 if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
 ) {
 
     document.addEventListener(
@@ -2187,7 +2942,9 @@ if (
         iniciarAplicacion
     );
 
-} else {
+}
+
+else {
 
     iniciarAplicacion();
 
