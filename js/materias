@@ -190,6 +190,7 @@ startButton.addEventListener(
         if (!selectedSubject) return;
 
         const paginas = {
+        tablas: "materias/tablas.html",
         matematicas: "materias/matematicas.html",
         lenguaje: "materias/lenguaje.html",
         comprencionlectora: "materias/comprencionlectora.html",
