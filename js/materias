@@ -1,10 +1,5 @@
 const subjects = {
-     tablas: {
-        title: "tablas",
-        icon: "✖️",
-        description:
-            "Practica las tablas de multiplicar del 1 al 10."
-    },
+     
     matematicas: {
         title: "Matemáticas",
         icon: "🔢",
@@ -73,7 +68,19 @@ const subjects = {
         icon: "🏃",
         description:
             "Movimiento corporal, actividad física, juegos y hábitos saludables."
-    }
+    },
+     tablas: {
+        title: "tablas",
+        icon: "✖️",
+        description:
+            "Practica las tablas de multiplicar del 1 al 10."
+    },
+    diviciones: {
+        title: "diviciones",
+        icon: "✖️",
+        description:
+            "Practica las Diviones."
+    },
 
 };
 
@@ -200,7 +207,8 @@ startButton.addEventListener(
         etica: "materias/etica.html",
         artistica: "materias/artistica.html",
         "educacion-fisica": "materias/fisica.html",
-        tablas: "materias/tablas.html"
+        tablas: "materias/tablas.html",
+        diviciones: "materias/diviciones.html"
     };
 
     const pagina = paginas[selectedSubject];
