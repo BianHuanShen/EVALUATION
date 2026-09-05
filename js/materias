@@ -199,8 +199,8 @@ startButton.addEventListener(
         naturales: "materias/naturales.html",
         etica: "materias/etica.html",
         artistica: "materias/artistica.html",
-        "educacion-fisica": "materias/fisica.html"
-        tablas: "materias/tablas.html",
+        "educacion-fisica": "materias/fisica.html",
+        tablas: "materias/tablas.html"
     };
 
     const pagina = paginas[selectedSubject];
