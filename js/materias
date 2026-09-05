@@ -190,7 +190,6 @@ startButton.addEventListener(
         if (!selectedSubject) return;
 
         const paginas = {
-        tablas: "materias/tablas.html",
         matematicas: "materias/matematicas.html",
         lenguaje: "materias/lenguaje.html",
         comprencionlectora: "materias/comprencionlectora.html",
@@ -201,6 +200,7 @@ startButton.addEventListener(
         etica: "materias/etica.html",
         artistica: "materias/artistica.html",
         "educacion-fisica": "materias/fisica.html"
+        tablas: "materias/tablas.html",
     };
 
     const pagina = paginas[selectedSubject];
