@@ -1,9 +1,9 @@
 const subjects = {
-     repaso-tablas: {
-        title: "Matemáticas",
-        icon: "🔢",
+     tablas: {
+        title: "tablas",
+        icon: "✖️",
         description:
-            "Números, suma, resta, multiplicación, división y resolución de problemas."
+            "Practica las tablas de multiplicar del 1 al 10."
     },
     matematicas: {
         title: "Matemáticas",
