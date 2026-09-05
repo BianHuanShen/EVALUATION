@@ -226,10 +226,10 @@ startButton.addEventListener(
         // window.location.href =
         //     `evaluacion.html?materia=${selectedSubject}`;
 
-        alert(
-            `¡Muy bien, Kaori! 🌟\n\n` +
-            `Vas a comenzar: ${subjects[selectedSubject].title}`
-        );
+        //alert(
+       //     `¡Muy bien, Kaori! 🌟\n\n` +
+       //     `Vas a comenzar: ${subjects[selectedSubject].title}`
+        //);
 
     }
 );
