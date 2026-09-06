@@ -29,7 +29,7 @@
   const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 
   function crear() {
-    const cifras = rnd(3, 6);
+    const cifras = rnd(3, 5);
     const min = 10 ** (cifras - 1);
     const max = 10 ** cifras - 1;
     const dividendo = rnd(min, max);
