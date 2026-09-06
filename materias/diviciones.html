@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repaso de divisiones</title>
+<link rel="stylesheet" href="../css/diviciones.css">
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <button class="btn-volver" id="btnVolver" type="button">← Volver</button>
+    <div class="titulo">
+      <div class="icono">➗</div>
+      <div>
+        <small>REPASO DE MATEMÁTICAS</small>
+        <h1>Divisiones como en el cuaderno</h1>
+        <p>Piensa, escribe, marca y baja.</p>
+      </div>
+    </div>
+    <div class="puntos" aria-label="Divisiones correctas">⭐ <span id="correctas">0</span></div>
+  </header>
+
+  <section class="tarjeta">
+    <div class="encabezado">
+      <span>🧠</span>
+      <div>
+        <h2>Resuelve la división</h2>
+        <p>Haz la multiplicación y la resta mentalmente. La pantalla solo te guía.</p>
+      </div>
+    </div>
+
+    <div class="zona">
+      <div class="division-papel" aria-label="División larga escolar">
+        <div class="lado-izquierdo">
+          <div class="dividendo" id="dividendo"></div>
+          <div class="trabajo" id="trabajo"></div>
+        </div>
+
+        <div class="lado-derecho">
+          <div class="divisor" id="divisor"></div>
+          <div class="linea"></div>
+          <div class="cociente" id="cociente"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="instruccion" id="instruccion" aria-live="polite"></div>
+
+    <div class="control">
+      <div class="paso">
+        <small>PASO</small>
+        <strong id="paso">1</strong>
+      </div>
+
+      <div class="texto">
+        <h3 id="pregunta">Elige las cifras</h3>
+        <p id="explicacion"></p>
+      </div>
+
+      <div class="respuesta">
+        <input id="respuesta" type="text" maxlength="1" inputmode="numeric"
+               autocomplete="off" aria-label="Cifra del cociente">
+        <button id="comprobar" type="button">Comprobar</button>
+      </div>
+    </div>
+
+    <div class="feedback oculto" id="feedback" aria-live="polite">
+      <span id="feedbackIcono">💡</span>
+      <div>
+        <strong id="feedbackTitulo"></strong>
+        <p id="feedbackTexto"></p>
+      </div>
+    </div>
+
+    <button class="accion oculto" id="bajar" type="button">⬇️ Bajar la siguiente cifra</button>
+    <button class="accion nueva oculto" id="nueva" type="button">✨ Nueva división</button>
+
+    <div class="recordatorio">
+      💡
+      <div>
+        <strong>Recuerda:</strong>
+        <p>Elige el grupo → divide mentalmente → escribe el cociente → piensa la resta → marca y baja.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guia">
+    <h3>Así se hace</h3>
+    <div><span>1</span><p><b>Elige</b><br>Marca las cifras que forman el primer grupo.</p></div>
+    <div><span>2</span><p><b>Divide</b><br>Escribe arriba cuántas veces cabe el divisor.</p></div>
+    <div><span>3</span><p><b>Piensa</b><br>Multiplica y resta mentalmente. No se muestra la cuenta.</p></div>
+    <div><span>4</span><p><b>Baja</b><br>Marca la siguiente cifra y bájala junto al resto.</p></div>
+  </section>
+</main>
+
+<div class="modal oculto" id="modal" role="dialog" aria-modal="true" aria-labelledby="resultadoGrande">
+  <div class="modal-box">
+    <div>🏆</div>
+    <h2>¡Muy bien!</h2>
+    <p id="resultado"></p>
+    <strong id="resultadoGrande"></strong>
+    <button id="otra" type="button">Hacer otra división</button>
+    <button class="sec" id="inicio" type="button">Volver al inicio</button>
+  </div>
+</div>
+
+<script src="../js/diviciones.js"></script>
+</body>
+</html>
