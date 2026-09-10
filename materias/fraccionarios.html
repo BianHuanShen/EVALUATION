@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Fraccionarios interactivos para estudiantes de 3.º grado.">
+  <title>Fraccionarios · 3.º grado</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🍕</div>
+        <div>
+          <h1>FRACCIONARIOS</h1>
+          <p>Diseñado para estudiantes de 3.º grado</p>
+        </div>
+      </div>
+
+      <div class="stats" aria-label="Progreso">
+        <div class="stat-card"><span>⭐</span><strong id="points">0</strong><small>puntos</small></div>
+        <div class="stat-card"><span>🔥</span><strong id="streak">0</strong><small>racha</small></div>
+        <div class="stat-card"><span>🏆</span><strong id="bestScore">0</strong><small>récord</small></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-title">RUTA DE APRENDIZAJE</div>
+        <nav id="mainNav" class="main-nav" aria-label="Secciones">
+          <button class="nav-btn active" data-view="home">🏠 <span>Inicio</span></button>
+          <button class="nav-btn" data-view="concepto">🍕 <span>¿Qué es?</span></button>
+          <button class="nav-btn" data-view="partes">🔢 <span>Numerador y<br>denominador</span></button>
+          <button class="nav-btn" data-view="lectura">📖 <span>Lectura</span></button>
+          <button class="nav-btn" data-view="representacion">🟦 <span>Representación</span></button>
+          <button class="nav-btn" data-view="comparacion">⚖️ <span>Comparación</span></button>
+          <button class="nav-btn" data-view="equivalentes">🧩 <span>Equivalentes</span></button>
+          <button class="nav-btn" data-view="practica">🎯 <span>Práctica</span></button>
+          <button class="nav-btn" data-view="evaluacion">🏆 <span>Evaluación</span></button>
+        </nav>
+        <button id="resetProgress" class="reset-btn">↻ Reiniciar progreso</button>
+      </aside>
+
+      <main id="app" class="content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="confirmTitle">¿Reiniciar progreso?</h2>
+      <p>Se borrarán los puntos, la racha, el récord y el estado guardado de la evaluación.</p>
+      <div class="modal-actions">
+        <button id="cancelReset" class="btn secondary">Cancelar</button>
+        <button id="confirmReset" class="btn danger">Sí, reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
