@@ -1,5 +1,10 @@
 const subjects = {
-    
+    fraccionarios: {
+    title: "Fraccionarios",
+    icon: "🍕",
+    description:
+        "Aprende fracciones de forma divertida: numerador, denominador, lectura, representación, comparación y fracciones equivalentes."
+    },
     matematicas: {
         title: "Matemáticas",
         icon: "🔢",
