@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fraccionarios interactivos para estudiantes de tercer grado">
+  <title>Fraccionarios · 3.º grado</title>
+  <link rel="stylesheet" href="../css/fraccionarios.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">🍕</div>
+      <div>
+        <strong>Fraccionarios</strong>
+        <span>Aprende jugando · 3.º grado</span>
+      </div>
+    </div>
+    <div class="top-stats" aria-label="Progreso">
+      <div class="stat"><span>⭐</span><b id="points">0</b><small>puntos</small></div>
+      <div class="stat"><span>🔥</span><b id="streak">0</b><small>racha</small></div>
+      <div class="stat"><span>🏆</span><b id="bestScore">0</b><small>mejor nota</small></div>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="Navegación principal">
+    <button class="nav-btn active" data-view="home">🏠 Inicio</button>
+    <button class="nav-btn" data-view="concepto">🍕 Concepto</button>
+    <button class="nav-btn" data-view="partes">🔢 Partes</button>
+    <button class="nav-btn" data-view="lectura">📖 Lectura</button>
+    <button class="nav-btn" data-view="representacion">🟦 Gráfica</button>
+    <button class="nav-btn" data-view="comparacion">⚖️ Comparar</button>
+    <button class="nav-btn" data-view="equivalentes">🧩 Equivalentes</button>
+    <button class="nav-btn" data-view="practica">🎯 Práctica</button>
+    <button class="nav-btn" data-view="evaluacion">🏆 Evaluación</button>
+    <button id="resetProgress" class="nav-btn reset">↻ Reiniciar</button>
+  </nav>
+
+  <main id="app" tabindex="-1"></main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal-card">
+      <div class="modal-icon">🧹</div>
+      <h2 id="resetTitle">¿Reiniciar progreso?</h2>
+      <p>Se borrarán puntos, racha, récord y el estado de la evaluación guardada.</p>
+      <div class="controls-row">
+        <button id="cancelReset" class="btn secondary">Cancelar</button>
+        <button id="confirmReset" class="btn danger">Sí, reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong>Diseñado para estudiantes de 3.º grado</strong>
+    <span>Aprender · practicar · pensar · mejorar</span>
+  </footer>
+
+  <script src="../js/fraccionarios.js" defer></script>
+</body>
+</html>
