@@ -967,7 +967,18 @@ function iniciarJuego(tabla) {
         jugando: true
 
     };
+    // Generar 10 multiplicadores únicos para esta partida.
+estado.multiplicadores = Array.from(
+    { length: 11 },
+    (_, i) => i
+);
 
+// Mezclar mediante Fisher-Yates.
+mezclar(estado.multiplicadores);
+
+// Utilizar solamente 10 multiplicadores.
+estado.multiplicadores =
+    estado.multiplicadores.slice(0, 10);
 
     /*
     Cerramos Game Over
@@ -1097,7 +1108,7 @@ function nuevaPregunta() {
     */
 
     const b =
-        aleatorio(0, 10);
+    estado.multiplicadores[estado.pregunta - 1];
 
 
     /*
